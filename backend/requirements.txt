@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pandas
+python-multipart
+# Add any other dependencies if needed, e.g. openpyxl if pandas needs it for excel, but here used csv
