@@ -17,9 +17,6 @@ def encrypt_logic(bim_data):
     Applies the encryption logic: removes spaces from names and logs changes.
     Returns: (modified_bim_data, changes_log_list)
     """
-    # Create a deep copy to avoid modifying original if passed by reference (though usually parsed fresh)
-    # Using json dump/load is a lazy way to deep copy, but here we assume bim_data is fresh.
-    
     changes_log = []
 
     def log_change(instance_level, field_name, before, after, table_name=None, data_type=None):
@@ -42,59 +39,32 @@ def encrypt_logic(bim_data):
             if 'name' in json_data and instance_level.endswith('tables[list]'):
                 current_table_name = json_data['name']
 
-            # Update 'name' field
-            if 'name' in json_data and 'columns' in json_data: # Identifying a table or similar structure? Original script logic
-                # Actually original logic was: if 'name' in json_data and 'columns' in json_data:
-                # Wait, generic tables usually have columns. 
-                # Original logic:
-                # if 'name' in json_data and 'columns' in json_data: -> It updates name
-                # Let's inspect the original logic carefully.
-                pass 
-
-            # Refined logic based on original script structure which was a bit loose
-            # It checks specific patterns.
-            
-            # Pattern 1: Table or Column definition usually
             if 'name' in json_data:
-                 # Check if this node is a table or column by context of keys?
-                 # Original script used: if 'name' in json_data and 'columns' in json_data: -> Table?
-                 # No, 'columns' in json_data implies it IS a table.
+                 # A node with columns is a table: rename it and pass the new name to its children.
                  if 'columns' in json_data:
                      before = json_data['name']
                      after = remove_spaces(before)
                      data_type = json_data.get('dataType')
-                     # Note: Original logs table_name only if instance_level ends with columns[list]
-                     # But here we are at table level.
                      log_table_name = None
                      log_data_type = None
-                     
+
                      if before != after:
-                        # Original: log_change(..., table_name if field_name == 'name' and instance_level.endswith('columns[list]') else None ...)
-                        # Since we are likely at Table level, table_name param is None or previous.
-                        # For Table Rename:
                         log_change(instance_level, 'name', before, after, None, None)
                         json_data['name'] = after
-                        # Update current_table_name for children
                         current_table_name = after
-                 
-                 # Pattern 2: Column (usually inside columns list)
-                 # Original script logic for generic walking:
-                 # if 'name' in json_data and 'sourceColumn' in json_data:
+
+                 # A node with a sourceColumn is a column: its new name comes from the source column.
                  elif 'sourceColumn' in json_data:
                      before = json_data['name']
                      source_column = json_data.get('sourceColumn')
                      after = remove_spaces(source_column)
                      data_type = json_data.get('dataType')
-                     
-                     # Determine if we log table name
-                     # The original script passed 'table_name' down.
-                     # log_change logic: table_name if field_name == 'name' and instance_level.endswith('columns[list]') else None
-                     
+
+                     # Columns log their table and data type so the decrypt step can find them again.
                      is_column_list = instance_level.endswith('columns[list]')
                      log_tbl = current_table_name if is_column_list else None
                      log_dt = data_type if is_column_list else None
-                     
-                     # if before != after: # Original had this commented out
+
                      log_change(instance_level, 'name', before, after, log_tbl, log_dt)
                      json_data['name'] = after
 

@@ -31,11 +31,7 @@ async def encrypt_bim(file: UploadFile = File(...)):
         
         modified_bim, changes_log = services.encrypt_logic(bim_data)
         
-        # Prepare response
-        # We might need to return a zip or a specific structure. 
-        # For now, let's return a JSON with the modified BIM and the log as a string (CS).
-        
-        # Convert log log to CSV string
+        # Return the modified BIM and the change log as a CSV string
         df = pd.DataFrame(changes_log)
         csv_buffer = StringIO()
         df.to_csv(csv_buffer, index=False)
